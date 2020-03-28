@@ -19,7 +19,7 @@
   <meta name="description" content="">
   <meta name="author" content="Jc">
   <meta name="keywords" content="">
-  <title>事务隔离级别 - Jc</title>
+  <title>栈 - Jc</title>
 
   <link  rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.12.1/css/all.min.css" />
 <link  rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.4.1/css/bootstrap.min.css" />
@@ -126,7 +126,7 @@
               
                 <p class="mt-3 post-meta">
                   <i class="fas fa-calendar-alt" aria-hidden="true"></i>
-                  星期六, 三月 28日 2020, 12:02 中午
+                  星期六, 三月 28日 2020, 5:27 下午
                 </p>
               
 
@@ -135,7 +135,7 @@
                   
                   <span class="post-meta">
                     <i class="far fa-chart-bar"></i>
-                    1.1k 字
+                    710 字
                   </span>
                 
 
@@ -171,45 +171,112 @@
           <div class="post-content mx-auto" id="post">
             
             <div class="markdown-body">
-              <p>本文将以 Mysql 为例，探讨数据库的事务隔离。</p>
+              <p>Python 的栈到底是个啥？</p>
 <a id="more"></a>
 
-<p><img src="./isolation_level.jpg" srcset="/img/loading.gif" alt="总览"></p>
+<p><img src="./stack.jpg" srcset="/img/loading.gif" alt="stack"></p>
+<p>栈是一种有序的数据结构，如图所示，想要取出下面的元素，就要先从顶端开始，一个一个的拿出，最终获得底端的元素 4。</p>
+<p>反过来说，想要把元素按照上面的方式摆放，就要从底端开始放入 4，然后依次放入元素，最后放入 8.4。</p>
+<p>因此，这种排列方式称为 LIFO（后入先出，last-in-first-out）。</p>
+<p>一个典型的栈结构，需要包含以下功能：</p>
 <ul>
-<li>未提交读(Read Uncommitted)：允许脏读，也就是可能读取到其他会话中未提交事务修改的数据</li>
-<li>提交读(Read Committed)：只能读取到已经提交的数据。Oracle 等多数数据库默认都是该级别 (不重复读)</li>
-<li>可重复读(Repeated Read)：可重复读。在同一个事务内的查询都是事务开始时刻一致的，InnoDB 默认级别。在 SQL 标准中，该隔离级别消除了不可重复读，但是还存在幻象读</li>
-<li>串行读(Serializable)：完全串行化的读，每次读都需要获得表级共享锁，读写相互都会阻塞</li>
+<li>Stack()创建一个空栈。它不需要参数，且会返回一个空栈。</li>
+<li>push(item)将一个元素添加到栈的顶端。它需要一个参数 item，且无返回值。</li>
+<li>pop()将栈顶端的元素移除。它不需要参数，但会返回顶端的元素，并且修改栈的内容。</li>
+<li>peek()返回栈顶端的元素，但是并不移除该元素。它不需要参数，也不会修改栈的内容。</li>
+<li>isEmpty()检查栈是否为空。它不需要参数，且会返回一个布尔值。</li>
+<li>size()返回栈中元素的数目。它不需要参数，且会返回一个整数。</li>
 </ul>
-<p>未提交读和串行读，一般很少用，在这里不做讨论。</p>
-<h1 id="提交读"><a href="# 提交读" class="headerlink" title="提交读"></a>提交读 </h1><p> 提交读对读操作不加锁，但对插入、修改、删除等操作加行锁。</p>
-<p>设置 session 隔离级别为 RC。</p>
-<pre><code class="sql">SET session transaction isolation level read committed;</code></pre>
-<p>加锁过程分两种情况讨论：<br>有索引：直接锁住索引命中的行；没有索引，mysql 首先默认锁住全表，但在过滤完筛选条件后，不满足条件的行会被释放锁（虽然这违背了二段锁的协议），从而保证高性能和高效率。</p>
-<h1 id="重复读"><a href="# 重复读" class="headerlink" title="重复读"></a>重复读 </h1><h2 id="读"><a href="# 读" class="headerlink" title="读"></a> 读</h2><p>可重复读，顾名思义，在同一事务里，不同阶段的读取结果是一样的。</p>
-<h3 id="不可重复读和幻读"><a href="# 不可重复读和幻读" class="headerlink" title="不可重复读和幻读"></a>不可重复读和幻读 </h3><p> 不同点在于锁的机制。</p>
-<p>不可重复读：提交读对读操作不加锁，所以同一事务中不同阶段的两次读取结果可能不一致。<br>幻读：重复读对读操作添加行锁，保证对应行的 update、delete 操作无法进行，但却没有对 insert 操作限制，导致出现幻读。</p>
-<p>以上讨论的，是以悲观锁机制来处理问题，在 mysql 和其它成熟的数据库中，出于性能考虑，都是使用以乐观锁为理论基础的 MVVC（多版本并发控制）来避免这两个问题。</p>
-<h3 id="悲观锁和乐观锁"><a href="# 悲观锁和乐观锁" class="headerlink" title="悲观锁和乐观锁"></a>悲观锁和乐观锁 </h3><p> 悲观锁：指的是对于数据被外界的修改持有悲观的态度（总是假设数据可能被修改），因此，由数据库自身提供锁机制，保证悲观锁的实现。<br>乐观锁：大多基于数据版本记录机制实现的。（在表中增加 <code>version</code> 字段，读取数据时，读出版本号，更新时，版本号 +1，若版本号大于数据库中的版本号时，允许更新，否则认为是过期数据。</p>
-<h3 id="MVVC 在 InnoDB 中的实现"><a href="#MVVC 在 InnoDB 中的实现" class="headerlink" title="MVVC 在 InnoDB 中的实现"></a>MVVC 在 InnoDB 中的实现</h3><p>0 每个表加上 2 个字段，一个存储创建版本号，一个存储过期版本号（或已删除）；<br>1 在每个事务开启的时候版本号 +1；</p>
+<p>栈的应用：</p>
 <ul>
-<li>SELECT：当前版本号 &gt;= 创建版本号，当前版本号 &lt; 过期版本号（或过期版本号为空）；</li>
-<li>UPDATE：插入新的记录，原本记录的过期版本号为当前版本号，新的记录的创建版本号为当前版本号；</li>
-<li>DELETE：当前版本号为过期版本号；</li>
-<li>INSERT：当前版本号为创建版本号；</li>
+<li>函数调用</li>
+<li>进制转换</li>
+<li>中序 -&gt; 后序（括号匹配）</li>
 </ul>
-<p>幻读的问题解决了，但还有并发写的问题。</p>
-<h2 id="写"><a href="# 写" class="headerlink" title="写"></a>写 </h2><h3 id="“读”与”读””"><a href="#“读”与”读””" class="headerlink" title="“读”与”读””"></a>“读”与”读””</h3><p> 数据库的读：快照读（snapshot read）select<br>事务隔离的读：当前读（current read）update insert delete</p>
-<p>快照读，不加锁，当前读，加锁（Next-key 锁）</p>
-<h3 id="Next-key 锁"><a href="#Next-key 锁" class="headerlink" title="Next-key 锁"></a>Next-key 锁</h3><p>Next-key 锁 = 行锁 + Gap 锁</p>
-<p><img src="./gap.png" srcset="/img/loading.gif" alt="Gap Lock"></p>
-<p>假设有 id 为 5，30 两条数据，更新修改 30<br>有索引：加 30 行锁，同时给（5-30）（30，+∞）加 Gap 锁。<br>没索引：全表 Gap 锁</p>
-<p>假设有 id 为 5，30 两条数据，事务 A 修改 20，事务 B 增加 10，id 为普通索引 <br> 事务 A：加（5，30）Gap 锁 <br> 事务 B：等待 A 完成</p>
-<p>事务 A：解锁，完成 <br> 事务 B：插入数据，完成</p>
-<p>由上可以看出，即使没有修改，数据库也会给数据加 Gap 锁，从而影响其它事务任务的执行。</p>
-<p>假设有 id 为 5，30 两条数据，事务 A 修改 20，事务 B 增加 10，事务 C 增加 40，id 为普通索引 <br> 事务 A：加（5，30）Gap 锁 <br> 事务 B：等待 A 完成 <br> 事务 C：插入 40，完成</p>
-<p>事务 A：解锁，完成 <br> 事务 B：插入数据，完成</p>
-<p>由上面可以看出，Gap 影响范围以外的行不受影响</p>
+<h2 id="Python 实现的栈"><a href="#Python 实现的栈" class="headerlink" title="Python 实现的栈"></a>Python 实现的栈</h2><pre><code class="python">class Stack:
+
+    _data_list = []
+
+    def push(self, data):
+        self._data_list.append(data)
+
+    def pop(self):
+        return self._data_list.pop()
+
+    def peek(self):
+        return self._data_list[-1]
+
+    def is_empty(self):
+        return len(self._data_list) &gt; 0
+
+    def size(self):
+        return len(self._data_list)</code></pre>
+<p>由于栈是由列表实现的，列表的 pop()和 pop(0)时间复杂度不一致，因此栈还有下面的实现方式：</p>
+<pre><code class="python">class Stack:
+
+    _data_list = []
+
+    def push(self, data):
+        self._data_list.insert(0, data)
+
+    def pop(self):
+        return self._data_list.pop(0)
+
+    def peek(self):
+        return self._data_list[0]
+
+    def is_empty(self):
+        return len(self._data_list) &gt; 0
+
+    def size(self):
+        return len(self._data_list)</code></pre>
+<p>两者只有性能上的区别，具体来说就是前者偏向取出，后者偏向插入。</p>
+<h2 id="十进制转换成二进制"><a href="# 十进制转换成二进制" class="headerlink" title="十进制转换成二进制"></a>十进制转换成二进制</h2><pre><code class="python">def convert_o_to_b(int_):
+    stack = Stack()
+    str_ = &#39;&#39;
+    while True:
+        a, int_ = int_ % 2, int(int_ / 2)
+        stack.push(a)
+        if int_ == 0:
+            break
+    while stack.size:
+        item = stack.pop()
+        str_ += str(item)
+    return str_
+
+# 123256545434567
+# 11100000001100111100110100110110101101111000111</code></pre>
+<h2 id="前序、中序和后序表达式"><a href="# 前序、中序和后序表达式" class="headerlink" title="前序、中序和后序表达式"></a>前序、中序和后序表达式 </h2><p> 有表达式 A * B + C，分别用前序、中序和后序表达：<br>前序：运算符在两个操作数之前，<em>AB+C<br>中序：运算符在两个操作数之间，A</em>B+C<br>后序：运算符在两个操作数之后，AB*C+</p>
+<p>中序表达式转换为后序表达式：</p>
+<pre><code class="python">def convert_multi(str_):
+    stack = Stack()
+    priority_map = {
+        &#39;*&#39;: 3,
+        &#39;/&#39;: 3,
+        &#39;+&#39;: 2,
+        &#39;-&#39;: 2,
+        &#39;(&#39;: 1,}
+    res = &#39;&#39;
+    for s in str_.split():
+        if s in string.digits:
+            res += s
+        elif s == &#39;(&#39;:
+            stack.push(s)
+        elif s == &#39;)&#39;:
+            op = stack.pop()
+            while op != &#39;(&#39;:
+                res += op
+                op = stack.pop()
+        else:
+            while not stack.is_empty and priority_map[stack.peek] &gt;= priority_map[s]:
+                res += stack.pop()
+            stack.push(s)
+    while not stack.is_empty:
+        res += stack.pop()
+    return res
+
+# &#39;(1 * 2 + 3) * 4 + 5 - 6 + 1 * 2&#39;
+# 后序表达式：12*3+4*5+6-12*+</code></pre>
 
             </div>
             <hr>
@@ -219,10 +286,7 @@
                   <span>
                 <i class="iconfont icon-inbox"></i>
                     
-                      <a class="hover-with-bg" href="/categories/Database/">Database</a>
-                      &nbsp;
-                    
-                      <a class="hover-with-bg" href="/categories/Database/Mysql/">Mysql</a>
+                      <a class="hover-with-bg" href="/categories/Python/">Python</a>
                       &nbsp;
                     
                   </span>&nbsp;&nbsp;
@@ -231,7 +295,7 @@
                   <span>
                 <i class="iconfont icon-tag"></i>
                     
-                      <a class="hover-with-bg" href="/tags/DB/">DB</a>
+                      <a class="hover-with-bg" href="/tags/Data-Structure/">Data Structure</a>
                     
                   </span>
                 
@@ -244,18 +308,12 @@
                   <div class="post-prev col-6">
                     
                     
-                      <a href="/2020/03/28/python-stack/">
-                        <i class="fa fa-chevron-left"></i>
-                        <span class="hidden-mobile">栈</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </div>
                   <div class="post-next col-6">
                     
                     
-                      <a href="/2020/03/28/Day-0/">
-                        <span class="hidden-mobile">Day 0</span>
+                      <a href="/2020/03/28/mysql-transaction-isolation/">
+                        <span class="hidden-mobile">事务隔离级别</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="fa fa-chevron-right"></i>
                       </a>
@@ -436,7 +494,7 @@
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "事务隔离级别&nbsp;",
+        "栈&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,
